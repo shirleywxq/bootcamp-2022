@@ -1,0 +1,81 @@
+---
+title: "Final_Bootcamp_Exercise"
+author: "Shirley Wang"
+date: "2022-09-19"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1. Data Imports
+Import NY school and county data.
+
+```{r}
+counties = read.csv("data/nys_acs.csv", stringsAsFactors=FALSE)
+schools = read.csv("data/nys_schools.csv", stringsAsFactors=FALSE)
+```
+
+## 2. Data Cleaning
+Data Exploration
+```{r}
+#View(counties)
+summary(counties)
+```
+
+
+```{r}
+#View(schools)
+summary(schools)
+```
+
+
+```{r}
+schools[schools$mean_math_score == -99.0,]
+```
+
+
+```{r}
+schools[schools == -99] <- NA
+schools <- schools %>% mutate_all(na_if,"")
+schools <- schools[complete.cases(schools),]
+```
+
+```{r}
+first_quantile = quantile(counties$median_household_income)[2]
+third_quantile = quantile(counties$median_household_income)[4]
+
+counties$income_level <- NA  # Initialize a variable containing all "NA" values
+counties$income_level[counties$median_household_income <= first_quantile] <- "Low"
+counties$income_level[counties$median_household_income > first_quantile & counties$median_household_income < third_quantile] <- "Medium"
+counties$income_level[counties$median_household_income >= third_quantile] <- "High"
+```
+
+
+```{r}
+df = merge(schools, counties, by = c('county_name', 'year'))
+View(df)
+```
+
+```{r}
+df %>% 
+  group_by(county_name) %>% 
+  summarise(total_enroll = sum(total_enroll), median_math_score = median(mean_math_score), median_ela_score = median(mean_ela_score))
+```
+
+```{r}
+df %>% 
+  group_by(income_level) %>% 
+  summarise(median_math_score = median(mean_math_score)) %>%
+  ggplot() + 
+  geom_col(aes(x=income_level, y=median_math_score)) 
+```
+```{r}
+df %>% 
+  group_by(income_level) %>% 
+  summarise(median_ela_score = median(mean_ela_score)) %>%
+  ggplot() + 
+  geom_col(aes(x=income_level, y=median_ela_score)) 
+```
+
